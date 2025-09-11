@@ -65,10 +65,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def complete(self, request, pk=None):
         task = self.get_object()
-        serializer = self.get_serializer(instance=task, data={"is_done": True}, partial=True)
+        serializer = self.get_serializer(
+            task,
+            data={"is_done": not task.is_done},
+            partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def stats(self, request, pk=None):
