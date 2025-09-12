@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema
+from .docs import TASK_FILTER_PARAMS, DELETE_TAG_PARAMS
 from .models import Task, Tag
 from .serializers import (
     TaskSerializer, TaskListSerializer,
@@ -71,15 +72,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         return [cls() for cls in classes]
 
     # ---- Кастомные действия: с валидацией и кодами ----
-    @extend_schema(parameters=[
-        OpenApiParameter("is_done", OpenApiTypes.BOOL, OpenApiParameter.QUERY, description="Фильтр по статусу"),
-        OpenApiParameter("tags__id", OpenApiTypes.INT, OpenApiParameter.QUERY, description="Фильтр по ID тега"),
-        OpenApiParameter("due_from", OpenApiTypes.DATE, OpenApiParameter.QUERY, description="Дедлайн с (YYYY-MM-DD)"),
-        OpenApiParameter("due_to", OpenApiTypes.DATE, OpenApiParameter.QUERY, description="Дедлайн по (YYYY-MM-DD)"),
-        OpenApiParameter("search", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Поиск по title"),
-        OpenApiParameter("ordering", OpenApiTypes.STR, OpenApiParameter.QUERY,
-                         description="Сортировка: id, -id, due_date, -due_date, created_at, -created_at"),
-    ])
+    @extend_schema(parameters=TASK_FILTER_PARAMS)
     @action(detail=False, methods=["get"])
     def get_all_tasks_and_their_info(self, request, pk=None):
         qs = self.filter_queryset(self.get_queryset())  # ✅ единая логика
@@ -143,18 +136,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = TagSerializer(tags, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                name="tag_id",
-                type=OpenApiTypes.INT,
-                location=OpenApiParameter.QUERY,
-                required=True,
-                description="ID тега, который отвязать от задачи",
-            ),
-        ],
-        responses={204: None, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
-    )
+    @extend_schema(parameters=DELETE_TAG_PARAMS)
     @action(detail=True, methods=["delete"], url_path="delete_tag")
     def delete_tag(self, request, pk=None):
         task = self.get_object()
