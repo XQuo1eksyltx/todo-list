@@ -3,18 +3,36 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 from .models import Task, Tag
 from .serializers import (
     TaskSerializer, TaskListSerializer,
     TaskChangeTitleSerializer, TaskCompleteSerializer, TaskStatsSerializer, TaskAddTagInput, TagSerializer
 )
 from .permissions import IsOwnerOrReadOnly
+from .filters import TaskFilter
 
-
+@extend_schema(
+    parameters=[],
+    # spectacular сам подхватит filterset/search/order по полям
+)
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    filterset_class = TaskFilter
+
+    #filters
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = {
+        "is_done": ["exact"],
+        "due_date": ["exact", "gte", "lte"],
+        "tags__id": ["exact"],  # фильтр по id тега
+    }
+    search_fields = ["title",]
+    ordering_fields = ["id", "due_date", "created_at"]
+    ordering = ["-id"]
 
     # Мапа action → сериализатор
     action_serializers = {
@@ -53,10 +71,18 @@ class TaskViewSet(viewsets.ModelViewSet):
         return [cls() for cls in classes]
 
     # ---- Кастомные действия: с валидацией и кодами ----
-
+    @extend_schema(parameters=[
+        OpenApiParameter("is_done", OpenApiTypes.BOOL, OpenApiParameter.QUERY, description="Фильтр по статусу"),
+        OpenApiParameter("tags__id", OpenApiTypes.INT, OpenApiParameter.QUERY, description="Фильтр по ID тега"),
+        OpenApiParameter("due_from", OpenApiTypes.DATE, OpenApiParameter.QUERY, description="Дедлайн с (YYYY-MM-DD)"),
+        OpenApiParameter("due_to", OpenApiTypes.DATE, OpenApiParameter.QUERY, description="Дедлайн по (YYYY-MM-DD)"),
+        OpenApiParameter("search", OpenApiTypes.STR, OpenApiParameter.QUERY, description="Поиск по title"),
+        OpenApiParameter("ordering", OpenApiTypes.STR, OpenApiParameter.QUERY,
+                         description="Сортировка: id, -id, due_date, -due_date, created_at, -created_at"),
+    ])
     @action(detail=False, methods=["get"])
     def get_all_tasks_and_their_info(self, request, pk=None):
-        qs = Task.objects.filter(user=self.request.user).order_by("-id")
+        qs = self.filter_queryset(self.get_queryset())  # ✅ единая логика
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
@@ -82,8 +108,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         count = qs.count()
         done = qs.filter(is_done=True).count()
         percent = (done / count * 100.0) if count else 0.0
-        data = {"count":count, "done_count":done, "percent": round(percent, 2)}
-        serializer = self.get_serializer(data)
+        payload = {"count": count, "done_count": done, "percent": round(percent, 2)}
+
+        serializer = self.get_serializer(instance=payload)  # ✅
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], serializer_class=TaskAddTagInput)
@@ -116,10 +143,32 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = TagSerializer(tags, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'])
-    def mark_urgent(self, request, pk=None):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="tag_id",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="ID тега, который отвязать от задачи",
+            ),
+        ],
+        responses={204: None, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+    )
+    @action(detail=True, methods=["delete"], url_path="delete_tag")
+    def delete_tag(self, request, pk=None):
         task = self.get_object()
-        task.priority = "urgent"
-        task.save(update_fields=["priority"])
-        serializer = TaskSerializer(task, context=self.get_serializer_context())
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        tag_id = request.query_params.get("tag_id")
+
+        if not tag_id:
+            return Response({"error": "tag_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            tag_id = int(tag_id)
+        except ValueError:
+            return Response({"error": "tag_id must be integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+        tag = get_object_or_404(Tag, pk=tag_id)
+        task.tags.remove(tag)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
