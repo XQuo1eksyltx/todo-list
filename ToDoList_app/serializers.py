@@ -1,15 +1,23 @@
 from rest_framework import serializers
 from .models import Task, Tag
 
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name"]
+
 class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ["id", "title", "is_done"]
 
 class TaskSerializer(serializers.ModelSerializer):
+    tags = TagSerializer(many=True, read_only=True)
     class Meta:
         model = Task
-        fields = "__all__"
+        fields = ['user', 'id', 'title', 'is_done', 'created_at', 'updated_at', 'due_date', 'tags']
+        read_only_fields = ['user', 'created_at', 'updated_at']
 
     def _val(self, attrs, name, default=None):
         if name in attrs:
@@ -49,6 +57,7 @@ class TaskCompleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ["is_done"]
+        read_only_fields = ["is_done"]
 
     def validate_is_done(self, v):
         if v is not True:
@@ -75,7 +84,4 @@ class TaskAddTagInput(serializers.Serializer):
         attrs["tag_name"] = tag_name
         return attrs
 
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ["id", "name"]
+

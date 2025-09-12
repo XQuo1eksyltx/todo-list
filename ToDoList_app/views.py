@@ -54,6 +54,13 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     # ---- Кастомные действия: с валидацией и кодами ----
 
+    @action(detail=False, methods=["get"])
+    def get_all_tasks_and_their_info(self, request, pk=None):
+        qs = Task.objects.filter(user=self.request.user).order_by("-id")
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
+
+
     @action(detail=True, methods=["post"])
     def change_title(self, request, pk=None):
         task = self.get_object()  # 404 и проверка queryset + object perms
@@ -63,16 +70,11 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"])
-    def complete(self, request, pk=None):
+    def toggle(self, request, pk=None):
         task = self.get_object()
-        serializer = self.get_serializer(
-            task,
-            data={"is_done": not task.is_done},
-            partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        task.is_done = not task.is_done
+        task.save(update_fields=["is_done"])
+        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def stats(self, request, pk=None):
@@ -118,6 +120,6 @@ class TaskViewSet(viewsets.ModelViewSet):
     def mark_urgent(self, request, pk=None):
         task = self.get_object()
         task.priority = "urgent"
-        task.save()
+        task.save(update_fields=["priority"])
         serializer = TaskSerializer(task, context=self.get_serializer_context())
         return Response(serializer.data, status=status.HTTP_200_OK)
