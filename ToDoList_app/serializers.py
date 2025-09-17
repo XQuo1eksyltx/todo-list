@@ -101,3 +101,26 @@ class TaskAddTagInput(serializers.Serializer):
             raise serializers.ValidationError("Use only one of: 'tag_id' or 'tag_name'.")
         attrs["tag_name"] = tag_name
         return attrs
+
+'''
+С самого вверху Тэг сериалайзер.
+Таск сериалайзер написать все Fields = ['field'] самому.
++ рид онли фиелдс
+далее поскольку у нас есть тэг сериалайзер делаем create + update
+
+_val function
+хэлпер для валидации. 
+
+def validate(self, attrs)
+...
+
+def validate_title(self, v)
+
+Сериалайзер для:
+изменения тайтла таска
+Отметки выполнено(toggle)
+можно сделать для статистики (скок тасков, скок выполненных, сколько процентов выполнено)
+и сериалайзер для создавания нового тэга и добавления его в таск.
+
+
+'''

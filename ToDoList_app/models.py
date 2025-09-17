@@ -26,3 +26,10 @@ class Task(models.Model):
     def __str__(self):
         return f'{self.created_at.strftime("%m/%d/%Y")} {self.title}'
 
+'''
+
+Создаем две модели. 
+Для тэга и для таска.
+Для таска нужно добавить tags = models.ManyToManyField(Tag, related_name="tasks", blank=True)
+
+'''

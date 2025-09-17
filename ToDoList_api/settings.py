@@ -141,22 +141,21 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    # "SIGNING_KEY": SECRET_KEY  # по умолчанию
 }
 SPECTACULAR_SETTINGS = {
-    "TITLE": "ToDo API",
+    "TITLE": "API",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-    "COMPONENT_SPLIT_REQUEST": True,
-    "SECURITY": [{"BearerAuth": []}],
-    "AUTHENTICATION_WHITELIST": [],  # опционально
-    "COMPONENTS": {
-        "securitySchemes": {
-            "BearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-            }
+    # чтобы Swagger не забывал авторизацию при перезагрузке
+    "SWAGGER_UI_SETTINGS": {"persistAuthorization": True},
+    # Объявляем схему Bearer JWT
+    "SECURITY_SCHEMES": {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
         }
     },
+    # По умолчанию требуем Bearer везде (можно убрать, если не нужно глобально)
+    "SECURITY": [{"BearerAuth": []}],
 }

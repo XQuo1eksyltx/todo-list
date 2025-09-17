@@ -17,7 +17,6 @@ from .filters import TaskFilter
 
 @extend_schema(
     parameters=[],
-    # spectacular сам подхватит filterset/search/order по полям
 )
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
@@ -154,3 +153,44 @@ class TaskViewSet(viewsets.ModelViewSet):
         task.tags.remove(tag)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+'''
+вьюшка
+
+@extend_schema(
+    parameters=[],
+) это для filter
+
+далее создаем ТаскВьюСет
+queryset..
+permission_classes...
+filterset_class...
+
+filter_backends...
+filderset_fields...
+search_fields...
+ordering_fields...
+ordering...
+
+мапа акшенов > сериализатор 
+
+action_serializer = {} list, retrieve
+
+мапа пермишенов
+
+action_permissions = {} list, retrieve, create, update, partial_update, 
+destroy, ...
+
+
+def get_queryset(self)
++prefetch
+
+get_serializer_class(self)
+        return self.action_serializers.get(self.action, TaskSerializer)
+get_permissions_self
+
+далее кастомные действия
+@extend_schema(parameters=TASK_FILTER_PARAMS)
+(Это если в docs.py стоя)
+@extend_schema(parameters=DELETE_TAG_PARAMS)
+
+'''

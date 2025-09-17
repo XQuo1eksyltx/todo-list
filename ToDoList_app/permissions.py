@@ -5,3 +5,9 @@ class IsOwnerOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return getattr(obj, "user_id", None) == getattr(request.user, "id", None)
+
+    '''
+    Пермисификация
+
+    ИсОвнерОрРидОнли
+    '''
