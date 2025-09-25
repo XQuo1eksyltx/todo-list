@@ -6,4 +6,4 @@ class TodolistAppConfig(AppConfig):
     name = 'ToDoList_app'
 
     def ready(self):
-        import ToDoList_app.signals
+        pass

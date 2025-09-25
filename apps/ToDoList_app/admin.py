@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Task, Tag
+from apps.ToDoList_app.domain.models import Task, Tag
 
 # Register your models here.
 admin.site.register(Task)

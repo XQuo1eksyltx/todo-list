@@ -1,5 +1,5 @@
 import django_filters
-from .models import Task
+from apps.ToDoList_app.domain.models import Task
 
 class TaskFilter(django_filters.FilterSet):
     # диапазон по дате дедлайна: ?due_from=2025-09-01&due_to=2025-09-30

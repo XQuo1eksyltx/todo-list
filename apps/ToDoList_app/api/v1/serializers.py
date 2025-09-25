@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, Tag
+from apps.ToDoList_app.domain.models import Task, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
